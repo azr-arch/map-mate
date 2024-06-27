@@ -1,4 +1,4 @@
-# MapMate: Real-Time Map Dating App
+# MapMate: Real-Time Map App
 
 MapMate is a real-time map-based dating app that allows users to see nearby individuals, initiate direct messaging, and share information. Think of it as the magical Marauder's Map from Harry Potter, but with a modern twist!
 
