@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/clerk-react";
 
 const WEBSOCKET_URL = import.meta.env.VITE_APP_WEBSOCKET_URL ?? "ws://localhost:8080";
 
 export const useSocket = () => {
     const [socket, setSocket] = useState<WebSocket | null>(null);
+    const { user } = useUser();
 
     useEffect(() => {
-        const ws = new WebSocket(WEBSOCKET_URL);
+        if (!user) return;
+
+        const ws = new WebSocket(`${WEBSOCKET_URL}`);
 
         ws.onopen = () => {
             setSocket(ws);
@@ -19,7 +23,7 @@ export const useSocket = () => {
         () => {
             setSocket(null);
         };
-    }, []);
+    }, [user]);
 
     // const sendInfo = useCallback(() => {
     //     if (!socket) {

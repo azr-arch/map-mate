@@ -6,41 +6,49 @@ class UserManager {
         this.isPollingStarted = false;
         this.users = {};
     }
-    addUser(newUser) {
+    addUser(newUser, serverSocketInstance) {
         this.users[newUser.id] = newUser;
-        console.log("A user is joined");
-        let size = Object.keys(this.users).length;
-        if (!this.isPollingStarted && size >= 2) {
-            this.isPollingStarted = true;
+        // If server instance is provided
+        // then broadcast to each client
+        console.log("This is server instance: ", serverSocketInstance);
+        if (serverSocketInstance) {
+            this.broadcastToAll(serverSocketInstance);
         }
     }
-    removeUser(websocket) {
-        // Implement this removing function
+    // updateUser and addUser can be merged!
+    updateUser(user, serverSocketInstance) {
+        if (!this.users[user.id]) {
+            console.log("No user exists with this id");
+            return;
+        }
+        // Successfully updated the user
+        this.users[user.id] = user;
+        if (serverSocketInstance) {
+            this.broadcastToAll(serverSocketInstance);
+        }
+    }
+    removeUser(websocket, serverSocketInstance) {
         const userIdToRemove = Object.keys(this.users).find((userId) => this.users[userId].websocket === websocket);
         if (userIdToRemove) {
             delete this.users[userIdToRemove];
         }
-        return;
+        console.log("A User has been removed");
+        if (serverSocketInstance) {
+            this.broadcastToAll(serverSocketInstance);
+        }
     }
     getUsersAsArray() {
         return Object.values(this.users);
     }
-    // Should i move this part out because ??
-    // Send continous update when there are more than 1 person
-    addHandler(socket) {
-        if (Object.keys(this.users).length > 1) {
-            console.log("Starting broadcasting");
-            setInterval(() => {
-                // Start broadcasting to all clients their position
-                socket.clients.forEach((client) => {
-                    client.send(JSON.stringify(this.getUsersAsArray()), (err) => {
-                        if (err) {
-                            console.log("Error broadcasting to all clients: ", err);
-                        }
-                    });
-                });
-            }, 10000);
-        }
+    broadcastToAll(socket) {
+        console.log("Broadcasting to all clients: ", this.getUsersAsArray());
+        socket.clients.forEach((client) => {
+            client.send(JSON.stringify(this.getUsersAsArray()), (err) => {
+                if (err) {
+                    console.log("Error broadcasting to all clients: ", err);
+                }
+            });
+        });
     }
 }
 exports.UserManager = UserManager;

@@ -9,7 +9,7 @@ export const DashboardLayout = () => {
 
     useEffect(() => {
         if (isLoaded && !userId) {
-            navigate("/sign-in");
+            navigate("/");
         }
     }, [isLoaded, navigate, userId]);
 

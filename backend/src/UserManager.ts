@@ -2,8 +2,9 @@ import { Server, WebSocket } from "ws";
 
 export interface User {
     id: string;
-    websocket: WebSocket;
+    username: string;
     coords: number[];
+    websocket?: WebSocket;
 }
 
 export class UserManager {
@@ -14,18 +15,32 @@ export class UserManager {
         this.users = {};
     }
 
-    addUser(newUser: User) {
+    addUser(newUser: User, serverSocketInstance?: Server<typeof WebSocket>) {
         this.users[newUser.id] = newUser;
 
-        console.log("A user is joined");
+        // If server instance is provided
+        // then broadcast to each client
 
-        let size = Object.keys(this.users).length;
-        if (!this.isPollingStarted && size >= 2) {
-            this.isPollingStarted = true;
+        console.log("This is server instance: ", serverSocketInstance);
+        if (serverSocketInstance) {
+            this.broadcastToAll(serverSocketInstance);
+        }
+    }
+    // updateUser and addUser can be merged!
+    updateUser(user: User, serverSocketInstance?: Server<typeof WebSocket>) {
+        if (!this.users[user.id]) {
+            console.log("No user exists with this id");
+            return;
+        }
+        // Successfully updated the user
+        this.users[user.id] = user;
+
+        if (serverSocketInstance) {
+            this.broadcastToAll(serverSocketInstance);
         }
     }
 
-    removeUser(websocket: WebSocket) {
+    removeUser(websocket: WebSocket, serverSocketInstance?: Server<typeof WebSocket>) {
         const userIdToRemove = Object.keys(this.users).find(
             (userId) => this.users[userId].websocket === websocket
         );
@@ -33,29 +48,26 @@ export class UserManager {
             delete this.users[userIdToRemove];
         }
 
-        return;
+        console.log("A User has been removed");
+
+        if (serverSocketInstance) {
+            this.broadcastToAll(serverSocketInstance);
+        }
     }
 
     getUsersAsArray() {
         return Object.values(this.users);
     }
 
-    // Should i move this part out because ??
-    // Send continous update when there are more than 1 person
-    addHandler(socket: Server<typeof WebSocket>) {
-        if (Object.keys(this.users).length > 1) {
-            console.log("Starting broadcasting");
+    private broadcastToAll(socket: Server<typeof WebSocket>) {
+        console.log("Broadcasting to all clients: ", this.getUsersAsArray());
 
-            setInterval(() => {
-                // Start broadcasting to all clients their position
-                socket.clients.forEach((client) => {
-                    client.send(JSON.stringify(this.getUsersAsArray()), (err) => {
-                        if (err) {
-                            console.log("Error broadcasting to all clients: ", err);
-                        }
-                    });
-                });
-            }, 10000);
-        }
+        socket.clients.forEach((client) => {
+            client.send(JSON.stringify(this.getUsersAsArray()), (err) => {
+                if (err) {
+                    console.log("Error broadcasting to all clients: ", err);
+                }
+            });
+        });
     }
 }
